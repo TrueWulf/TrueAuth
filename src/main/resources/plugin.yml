@@ -1,0 +1,36 @@
+name: TrueAuth
+version: 1.6.0
+main: ru.truwlf.trueauth.TrueAuthPlugin
+api-version: '1.21'
+author: TrueWulf
+description: A very lightweight registration and login plugin for Paper and Purpur 1.21-1.21.11.
+commands:
+  register:
+    usage: /register <password> <confirmPassword>
+    aliases: [reg, r]
+  login:
+    usage: /login <password>
+    aliases: [log, l]
+  changepassword:
+    usage: /changepassword <oldPassword> <newPassword>
+    aliases: [changepass, cp]
+  trueauth:
+    usage: /trueauth help
+    aliases: [ta]
+permissions:
+  trueauth.admin.reload:
+    description: Reload TrueAuth configuration and locale.
+    default: op
+  trueauth.admin.account:
+    description: View and manage TrueAuth accounts.
+    default: op
+  trueauth.admin.spawn:
+    description: Set TrueAuth spawn locations.
+    default: op
+  trueauth.admin:
+    description: Grants all TrueAuth administrative permissions.
+    default: op
+    children:
+      trueauth.admin.reload: true
+      trueauth.admin.account: true
+      trueauth.admin.spawn: true

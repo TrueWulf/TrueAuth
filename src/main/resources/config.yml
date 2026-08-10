@@ -1,0 +1,67 @@
+# TrueAuth | Author: TruWlf
+# Available locales are files in the lang directory, for example en_US or ru_RU.
+lang: en_US
+
+auth:
+  min-password-length: 6
+  max-password-length: 32
+  login-timeout-seconds: 60
+  kick-on-timeout: true
+  # Minimum delay between /login and /register attempts. Limits password guessing.
+  command-cooldown-millis: 1000
+
+spawns:
+  # Post-authentication teleports are disabled by default. When disabled, players
+  # return to the exact position they had before entering limbo.
+  post-auth:
+    registration-teleport: false
+    login-teleport: false
+    # When login-teleport is enabled, use the stored logout position first.
+    use-last-logout-location: true
+  # Destination immediately after a new account is registered when enabled above.
+  registration:
+    world: "world"
+    x: 30.5
+    y: 71.0
+    z: -30.5
+    yaw: 0.0
+    pitch: 0.0
+  # Used after login only when no saved logout location exists.
+  login-fallback:
+    world: "world"
+    x: 30.5
+    y: 71.0
+    z: -30.5
+    yaw: 0.0
+    pitch: 0.0
+  random-respawn:
+    # When a player has no personal bed or respawn-anchor location, respawn them
+    # randomly in this ring around the configured center. Set enabled to false to
+    # preserve the server's normal respawn behaviour.
+    # Disabled by default: Minecraft's normal respawn behaviour is preserved.
+    enabled: false
+    world: "world"
+    center-x: 0.5
+    center-z: 0.5
+    radius: 300
+
+limbo:
+  # A void world is created for players before authentication. Only the player's
+  # current chunk is loaded; movement is cancelled while the player is in limbo.
+  hide-inventory: true
+  # Do not reuse an older flat limbo world. Use a new name if the old folder exists.
+  world: "trueauth_void"
+  x: 0
+  y: 128
+  z: 0
+  # Keep a single bedrock block below the player in the otherwise empty void.
+  bedrock-platform: true
+
+database:
+  type: SQLITE # Options: SQLITE, MYSQL
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "trueauth"
+    username: "root"
+    password: ""
