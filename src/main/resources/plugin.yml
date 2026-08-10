@@ -3,7 +3,7 @@ version: 1.6.0
 main: ru.truwlf.trueauth.TrueAuthPlugin
 api-version: '1.21'
 author: TrueWulf
-description: A very lightweight registration and login plugin for Paper and Purpur 1.21-1.21.11.
+description: Lightweight registration and login plugin for Paper and Purpur 1.21.x.
 commands:
   register:
     usage: /register <password> <confirmPassword>

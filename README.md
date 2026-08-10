@@ -1,6 +1,6 @@
 # TrueAuth
 
-TrueAuth is a very lightweight registration and login plugin for Paper servers and compatible Paper forks running Minecraft 1.21. It isolates unauthenticated players in a void limbo and protects their inventory.
+TrueAuth is a lightweight registration and login plugin for Paper and Purpur servers running Minecraft 1.21.x. It isolates unauthenticated players in a void limbo and protects their inventory.
 
 ![TrueAuth icon](TrueAuth-icon.png)
 
@@ -17,7 +17,7 @@ TrueAuth is a very lightweight registration and login plugin for Paper servers a
 ## Requirements
 
 - Java 21
-- Paper 1.21.11 or a compatible Paper fork, such as Purpur or Leaves
+- Paper or Purpur for Minecraft 1.21.x
 
 TrueAuth uses Paper API and is not advertised as compatible with Spigot, Bukkit, Folia, Velocity, or Waterfall.
 
