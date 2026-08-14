@@ -1,0 +1,22 @@
+name: Gentoo CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build on Gentoo
+    # GitHub-hosted runners do not provide Gentoo. Register a self-hosted
+    # runner with the labels below to enable this optional workflow.
+    runs-on: [self-hosted, linux, gentoo]
+    steps:
+      - uses: actions/checkout@v5
+      - run: java -version
+      - run: mvn --batch-mode clean package -Pmc-1.20 -DskipTests
+      - run: mvn --batch-mode -f sponge/pom.xml clean package -DskipTests
+      - run: mvn --batch-mode -f proxy-common/pom.xml clean install -DskipTests
+      - run: mvn --batch-mode -f velocity/pom.xml clean package -DskipTests
+      - run: mvn --batch-mode -f waterfall/pom.xml clean package -DskipTests

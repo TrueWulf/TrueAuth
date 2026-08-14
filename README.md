@@ -11,6 +11,8 @@ Secure player accounts with BCrypt, SQLite or MySQL, a protected pre-login state
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)
 ![Build](https://img.shields.io/github/actions/workflow/status/TrueWulf/TrueAuth/build.yml?branch=main&style=flat-square&label=build)
 
+[Support TrueAuth on Ko-fi](https://ko-fi.com/truewulf/goal?g=0)
+
 </div>
 
 ## Overview
@@ -39,7 +41,11 @@ TrueAuth keeps players in a protected state until they register or log in. It is
 | 1.21.x | `TrueAuth-1.21.x.jar` or `TrueAuth-Spigot-1.21.x.jar` | 21 | Build verified |
 | 26.x | `TrueAuth-26.1.x.jar` and `TrueAuth-26.2.jar` | 25 | Build verified |
 
-Supported Bukkit-compatible cores include Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. Folia uses the platform scheduler adapter.
+`TrueAuth-1.20.x.jar` is compiled against Paper API 1.20.1 and is intended for Paper, Folia, Purpur, Bukkit-compatible Spigot implementations, Patina, and Leaf on Minecraft 1.20.x. Use `TrueAuth-Spigot-1.20.x.jar` when you specifically want the Spigot API build.
+
+`TrueAuth-1.21.x.jar` and `TrueAuth-Spigot-1.21.x.jar` follow the same distinction for Minecraft 1.21.x. Arclight and Mohist are not separately runtime-tested and should be treated as best-effort compatibility.
+
+Folia uses the platform scheduler adapter and `folia-supported: true`.
 
 ### Sponge
 
@@ -50,9 +56,18 @@ Sponge uses a separate plugin and must not load the Bukkit/Paper artifact.
 - Includes registration, login, BCrypt/SQLite storage, timeout handling, and pre-authentication restrictions
 - Build verified; runtime testing on a Sponge server is still pending
 
-### Not Included
+### Proxy adapters
 
-Velocity and Waterfall require separate proxy modules and are not Bukkit or Sponge server cores.
+Proxy authentication is provided by separate JARs:
+
+- `TrueAuth-Velocity.jar` for Velocity 3.4.x and newer compatible Velocity 3.x proxies
+- `TrueAuth-Waterfall.jar` for Waterfall/BungeeCord-compatible proxies using the BungeeCord API
+
+Do not install proxy JARs in a Bukkit/Paper/Sponge server, or Bukkit JARs in a proxy.
+
+### Proxy deployment notes
+
+The proxy adapters authenticate players before backend forwarding. Use MySQL when multiple proxy instances must share accounts; SQLite is intended for a single proxy instance.
 
 ## Installation
 
@@ -103,6 +118,9 @@ mvn clean package -Pspigot-1.21 -DskipTests
 mvn clean package -Pmc-26-1 -DskipTests
 mvn clean package -Pmc-26 -DskipTests
 mvn -f sponge/pom.xml clean package -DskipTests
+mvn -f proxy-common/pom.xml clean install -DskipTests
+mvn -f velocity/pom.xml clean package -DskipTests
+mvn -f waterfall/pom.xml clean package -DskipTests
 ```
 
 The 26.x profiles remain separate internally because 26.1 and 26.2 use different Paper API builds and produce separate release artifacts.
@@ -110,5 +128,9 @@ The 26.x profiles remain separate internally because 26.1 and 26.2 use different
 ## License
 
 TrueAuth is distributed under the GNU General Public License v3.0. See [`LICENSE`](LICENSE).
+
+## Support
+
+If TrueAuth is useful to your server, you can support development on [Ko-fi](https://ko-fi.com/truewulf/goal?g=0).
 
 For the detailed matrix and platform notes, see [`COMPATIBILITY.md`](COMPATIBILITY.md).

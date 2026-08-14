@@ -11,6 +11,8 @@
 | 26.x (26.1 / 26.1.1) | Paper API 26.1.1 build 29 alpha | 25+ | 25+ | `TrueAuth-26.1.x.jar` | Supported |
 | 26.x (26.2) | Paper API 26.2 build 112 stable | 25+ | 25+ | `TrueAuth-26.2.jar` | Supported |
 | Sponge 8.2.x | Sponge API 8.2.0 | 17+ | 17+ | `TrueAuth-Sponge-8.x.jar` | Build verified; runtime pending |
+| Velocity 3.4.x+ | Velocity API 3.4.0 | 17+ | 17+ | `TrueAuth-Velocity.jar` | Build verified; runtime pending |
+| Waterfall / BungeeCord-compatible | BungeeCord API 1.21-R0.3 | 17+ | 17+ | `TrueAuth-Waterfall.jar` | Build verified; runtime pending |
 | 26.3 | No published Paper API/build | 25+ | 25+ | None | Pending |
 
 Minecraft 26.x requires Java 25 or newer. The local `mc-26` build was verified with JDK 26 because JDK 25 is not installed in the development environment.
@@ -38,6 +40,22 @@ Sponge is a separate platform. Install `TrueAuth-Sponge-8.x.jar` on Sponge API 8
 
 1. Add independent runtime tests for Spigot, Arclight, Mohist, and Sponge.
 2. Keep Velocity and Waterfall as proxy modules; they cannot load a Bukkit or Sponge plugin directly.
+
+## Published Artifact Guide
+
+| JAR | Install on | Compatible cores/platforms | Notes |
+| --- | --- | --- | --- |
+| `TrueAuth-1.20.x.jar` | Minecraft 1.20.x | Paper, Folia, Purpur, Bukkit-compatible Spigot implementations, Patina, Leaf | Compiled against Paper API 1.20.1 |
+| `TrueAuth-Spigot-1.20.x.jar` | Minecraft 1.20.x | Spigot and Bukkit-compatible forks | Compiled against Spigot API 1.20.1 |
+| `TrueAuth-1.21.x.jar` | Minecraft 1.21.x | Paper, Folia, Purpur, Bukkit-compatible Spigot implementations, Patina, Leaf | Compiled against Paper API 1.21.11 |
+| `TrueAuth-Spigot-1.21.x.jar` | Minecraft 1.21.x | Spigot and Bukkit-compatible forks | Compiled against Spigot API 1.21.1 |
+| `TrueAuth-26.1.x.jar` | Minecraft 26.1.x | Paper-family servers with the matching 26.1 API | Java 25+ |
+| `TrueAuth-26.2.jar` | Minecraft 26.2 | Paper-family servers with the matching 26.2 API | Java 25+ |
+| `TrueAuth-Sponge-8.x.jar` | Sponge API 8.2.x | Sponge | Separate plugin; not a Bukkit plugin |
+| `TrueAuth-Velocity.jar` | Velocity 3.4.x+ | Velocity | Separate proxy plugin |
+| `TrueAuth-Waterfall.jar` | Waterfall / BungeeCord-compatible proxy | Waterfall and compatible BungeeCord proxies | Separate proxy plugin |
+
+Arclight and Mohist are not separately runtime-tested. Treat them as best-effort compatibility rather than fully verified targets.
 
 ## Build Commands
 

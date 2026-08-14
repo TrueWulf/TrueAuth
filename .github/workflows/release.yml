@@ -19,36 +19,57 @@ jobs:
           - name: 1.20.x
             profile: mc-1.20
             java: '17'
+            artifact: target/TrueAuth-1.20.x.jar
           - name: Spigot-1.20.x
             profile: spigot-1.20
             java: '17'
+            artifact: target/TrueAuth-Spigot-1.20.x.jar
           - name: 1.21.x
             profile: mc-1.21
             java: '21'
+            artifact: target/TrueAuth-1.21.x.jar
           - name: Spigot-1.21.x
             profile: spigot-1.21
             java: '21'
+            artifact: target/TrueAuth-Spigot-1.21.x.jar
           - name: 26.1.x
             profile: mc-26-1
             java: '25'
+            artifact: target/TrueAuth-26.1.x.jar
           - name: 26.2
             profile: mc-26
             java: '25'
+            artifact: target/TrueAuth-26.2.jar
           - name: Sponge-8.x
             profile: sponge
             java: '17'
+            artifact: sponge/target/TrueAuth-Sponge-8.x.jar
+          - name: Velocity
+            profile: velocity
+            java: '17'
+            artifact: velocity/target/TrueAuth-Velocity.jar
+          - name: Waterfall
+            profile: waterfall
+            java: '17'
+            artifact: waterfall/target/TrueAuth-Waterfall.jar
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - run: if [ "${{ matrix.profile }}" = "sponge" ]; then mvn --batch-mode -f sponge/pom.xml clean package -DskipTests; else mvn --batch-mode clean package -P${{ matrix.profile }} -DskipTests; fi
+      - run: |
+          case "${{ matrix.profile }}" in
+            sponge) mvn --batch-mode -f sponge/pom.xml clean package -DskipTests ;;
+            velocity) mvn --batch-mode -f proxy-common/pom.xml clean install -DskipTests && mvn --batch-mode -f velocity/pom.xml clean package -DskipTests ;;
+            waterfall) mvn --batch-mode -f proxy-common/pom.xml clean install -DskipTests && mvn --batch-mode -f waterfall/pom.xml clean package -DskipTests ;;
+            *) mvn --batch-mode clean package -P${{ matrix.profile }} -DskipTests ;;
+          esac
       - uses: actions/upload-artifact@v4
         with:
           name: TrueAuth-${{ matrix.name }}
-          path: ${{ matrix.profile == 'sponge' && 'sponge/target/TrueAuth-Sponge-8.x.jar' || format('target/TrueAuth-{0}.jar', matrix.name) }}
+          path: ${{ matrix.artifact }}
           if-no-files-found: error
 
   publish:

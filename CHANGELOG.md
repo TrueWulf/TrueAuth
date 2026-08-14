@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+- Added Velocity and Waterfall proxy adapters with shared BCrypt and SQL account storage.
+- Added Ko-fi support links and Modrinth compatibility guidance.
+- Added proxy builds to CI and GitHub releases.
+
 ## 2.1.0
 
 - Added build profiles and versioned artifacts for Minecraft 1.20.x, 1.21.x, 26.1.x, and 26.2.
