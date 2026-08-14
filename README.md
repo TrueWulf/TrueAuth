@@ -2,8 +2,6 @@
 
 TrueAuth is a lightweight registration and login plugin for Paper and Purpur servers running Minecraft 1.21.x. It isolates unauthenticated players in a void limbo and protects their inventory.
 
-![TrueAuth icon](TrueAuth-icon.png)
-
 ## Features
 
 - Void limbo with one configurable bedrock block and locked player movement
