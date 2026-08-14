@@ -1,79 +1,114 @@
+<div align="center">
+
 # TrueAuth
 
-TrueAuth is a lightweight registration and login plugin for Bukkit-compatible servers running Minecraft 1.20.x, 1.21.x, and 26.x. It isolates unauthenticated players in a void limbo and protects their inventory.
+**Fast, lightweight registration and authentication for Minecraft servers.**
+
+Secure player accounts with BCrypt, SQLite or MySQL, a protected pre-login state, and a clean setup for modern Bukkit-compatible cores.
+
+![Minecraft](https://img.shields.io/badge/Minecraft-1.20.x%20%7C%201.21.x%20%7C%2026.x-2ea043?style=flat-square)
+![Java](https://img.shields.io/badge/Java-17%20%7C%2021%20%7C%2025-e76f00?style=flat-square)
+![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)
+![Build](https://img.shields.io/github/actions/workflow/status/TrueWulf/TrueAuth/build.yml?branch=main&style=flat-square&label=build)
+
+</div>
+
+## Overview
+
+TrueAuth keeps players in a protected state until they register or log in. It is designed to stay small, quick to start, and easy to configure on both classic Bukkit servers and modern Paper-family forks.
 
 ## Features
 
-- Void limbo with one configurable bedrock block and locked player movement
-- Empty inventory and hidden health HUD before authentication
-- Persistent localized ActionBar prompts in English and Russian
-- BCrypt password hashing and SQLite or MySQL storage
-- Saved logout locations, configurable registration spawn, and login fallback
-- Safe random respawn ring for players without a bed or respawn anchor
-- Administrative command with permission-aware tab completion
+- Protected void limbo with configurable bedrock platform
+- Locked movement and interaction before authentication
+- Temporary inventory protection and health HUD handling
+- Localized titles, ActionBar prompts, and messages
+- BCrypt password hashing
+- SQLite or MySQL storage on Bukkit/Paper
+- Saved logout locations and configurable login fallbacks
+- Optional safe random respawn ring
+- Permission-aware administration commands
 
-## Requirements
+## Compatibility
 
-- Java 17 for 1.20.x, Java 21 for 1.21.x, and Java 25 for 26.x
-- A Bukkit-compatible server core for Minecraft 1.20.x, 1.21.x, or 26.x
+### Bukkit and Paper
 
-TrueAuth targets Bukkit-compatible server cores: Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. The same versioned artifact is used on compatible cores. Sponge is supported by a separate Sponge API 8.2 adapter; Velocity and Waterfall require separate proxy modules.
+| Minecraft | Artifact | Java | Build status |
+| --- | --- | --- | --- |
+| 1.20.x | `TrueAuth-1.20.x.jar` or `TrueAuth-Spigot-1.20.x.jar` | 17 | Build verified |
+| 1.21.x | `TrueAuth-1.21.x.jar` or `TrueAuth-Spigot-1.21.x.jar` | 21 | Build verified |
+| 26.x | `TrueAuth-26.1.x.jar` and `TrueAuth-26.2.jar` | 25 | Build verified |
+
+Supported Bukkit-compatible cores include Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. Folia uses the platform scheduler adapter.
+
+### Sponge
+
+Sponge uses a separate plugin and must not load the Bukkit/Paper artifact.
+
+- API: Sponge 8.2.x
+- Artifact: `TrueAuth-Sponge-8.x.jar`
+- Includes registration, login, BCrypt/SQLite storage, timeout handling, and pre-authentication restrictions
+- Build verified; runtime testing on a Sponge server is still pending
+
+### Not Included
+
+Velocity and Waterfall require separate proxy modules and are not Bukkit or Sponge server cores.
 
 ## Installation
 
-1. Download the artifact matching your server version from the release assets.
-2. Place it in the server `plugins` directory.
-3. Start the server and configure `plugins/TrueAuth/config.yml`.
-4. Restart the server after changing the limbo world name or database settings.
+1. Download the artifact for the server API and Minecraft version.
+2. Put the JAR in the server `plugins` directory.
+3. Start the server once.
+4. Edit `plugins/TrueAuth/config.yml` if needed.
 
-The default limbo world is `trueauth_void`. Do not reuse a previously generated flat limbo world. If an old limbo folder is no longer needed, delete it only while the server is stopped.
+The default limbo world is `trueauth_void`. Stop the server before removing an old limbo world folder.
 
-## Player Commands
+## Commands
 
-`/register <password> <repeat password>`
+### Players
 
-`/login <password>`
+```text
+/register <password> <repeat password>
+/login <password>
+/changepassword <old password> <new password>
+```
 
-`/changepassword <old password> <new password>`
+### Administrators
 
-## Administration
+```text
+/trueauth help
+/trueauth reload
+/trueauth status <player>
+/trueauth unregister <player>
+/trueauth resetpassword <player> <new password>
+/trueauth setregistration
+/trueauth setloginfallback
+```
 
-`/trueauth help`
-
-`/trueauth reload`
-
-`/trueauth status <player>`
-
-`/trueauth unregister <player>`
-
-`/trueauth resetpassword <player> <new password>`
-
-`/trueauth setregistration`
-
-`/trueauth setloginfallback`
-
-Grant `trueauth.admin` for all administrative commands, or grant `trueauth.admin.reload`, `trueauth.admin.account`, and `trueauth.admin.spawn` separately.
+Grant `trueauth.admin` for full access, or use the individual permissions `trueauth.admin.reload`, `trueauth.admin.account`, and `trueauth.admin.spawn`.
 
 ## Configuration
 
-All player-facing text, including messages, Titles, and ActionBars, is editable in the active `lang/<locale>.yml` file. Available locales are `en_US`, `ru_RU`, `de_DE`, `fr_FR`, `it_IT`, `es_ES`, and `pt_BR`. Set `lang` in `config.yml`; an unknown locale safely falls back to English.
+Player-facing text is stored in `lang/<locale>.yml`. Included locales are English, Russian, German, French, Italian, Spanish, and Brazilian Portuguese.
 
-Post-authentication teleports and random respawn are disabled by default. With defaults, players return to their exact pre-limbo position after registering or logging in, and Minecraft handles respawning normally. Enable and configure `spawns.post-auth` or `spawns.random-respawn` only when needed.
+Post-authentication teleportation and random respawn are disabled by default. Enable `spawns.post-auth` or `spawns.random-respawn` when those behaviors are required.
 
-## Supported targets
+## Building
 
-| Target | Build command | Java | Status |
-| --- | --- | --- | --- |
-| Bukkit-compatible 1.20.x | `mvn package -Pspigot-1.20` | 17 | Supported |
-| Bukkit-compatible 1.21.x | `mvn package -Pspigot-1.21` | 21 | Supported |
-| Paper-family 1.20.x | `mvn package -Pmc-1.20` | 17 | Supported |
-| Paper-family 1.21.x | `mvn package -Pmc-1.21` | 21 | Supported |
-| Paper-family 26.x | See separate 26.1/26.2 artifacts below | 25 to build/run | Supported |
-| 26.3 | Not available yet | 25 | Pending official Paper API/build |
-| Sponge API 8.2.x | `mvn -f sponge/pom.xml package` | 17 | Build verified; runtime pending |
+```text
+mvn clean package -Pmc-1.20 -DskipTests
+mvn clean package -Pmc-1.21 -DskipTests
+mvn clean package -Pspigot-1.20 -DskipTests
+mvn clean package -Pspigot-1.21 -DskipTests
+mvn clean package -Pmc-26-1 -DskipTests
+mvn clean package -Pmc-26 -DskipTests
+mvn -f sponge/pom.xml clean package -DskipTests
+```
 
- The Bukkit-compatible core list is: Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. Sponge servers use the separate `TrueAuth-Sponge-8.x.jar` adapter and must not use the Bukkit/Paper JAR.
- 
- Minecraft 26.x currently remains two separate release artifacts: `TrueAuth-26.1.x.jar` is built with `paper-api:26.1.1.build.29-alpha`, and `TrueAuth-26.2.jar` with `paper-api:26.2.build.112-stable`. A dedicated 26.3 build will be added when Paper publishes its API and server build.
- 
- For the detailed compatibility matrix and adapter roadmap, see [`COMPATIBILITY.md`](COMPATIBILITY.md).
+The 26.x profiles remain separate internally because 26.1 and 26.2 use different Paper API builds and produce separate release artifacts.
+
+## License
+
+TrueAuth is distributed under the GNU General Public License v3.0. See [`LICENSE`](LICENSE).
+
+For the detailed matrix and platform notes, see [`COMPATIBILITY.md`](COMPATIBILITY.md).
