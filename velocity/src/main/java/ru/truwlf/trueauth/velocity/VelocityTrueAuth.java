@@ -31,7 +31,7 @@ import com.velocitypowered.api.scheduler.ScheduledTask;
 import ru.truwlf.trueauth.proxy.ProxyAuthState;
 import ru.truwlf.trueauth.proxy.ProxyPasswordPolicy;
 
-@Plugin(id = "trueauth", name = "TrueAuth", version = "2.3.0", description = "Lightweight authentication for Velocity proxies.", authors = {"TrueWulf"})
+@Plugin(id = "trueauth", name = "TrueAuth", version = "2.4.0", description = "Lightweight authentication for Velocity proxies.", authors = {"TrueWulf"})
 public final class VelocityTrueAuth {
     private final ProxyServer proxy;
     private final Logger logger;

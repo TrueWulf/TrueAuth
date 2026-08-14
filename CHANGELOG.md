@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.4.0
+
+- Hardened proxy authentication against reconnect session races.
+- Added authentication timeouts for Velocity and Waterfall.
+- Added cooldowns, in-flight request protection, and attempt limits for proxy authentication.
+- Moved Sponge database access and BCrypt work off the main server thread.
+- Expanded Sponge pre-authentication restrictions for blocks, items, containers, drops, and pickups.
+- Added password length and BCrypt byte-length validation to proxy adapters.
+- Added TLS configuration for proxy MySQL connections.
+- Added clean database shutdown handling for Sponge and Velocity.
+- Fixed Waterfall command aliases and strict command argument validation.
+- Fixed Bukkit random respawn handling and logout-location save races.
+- Fixed administrative account removal to reset the player's active authentication state.
+
 ## 2.3.0
 
 - Added Velocity and Waterfall proxy adapters with shared BCrypt and SQL account storage.

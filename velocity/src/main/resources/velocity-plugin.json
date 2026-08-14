@@ -1,7 +1,7 @@
 {
   "id": "trueauth",
   "name": "TrueAuth",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "main": "ru.truwlf.trueauth.velocity.VelocityTrueAuth",
   "description": "Lightweight authentication for Velocity proxies.",
   "authors": ["TrueWulf"]
