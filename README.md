@@ -73,12 +73,3 @@ Post-authentication teleports and random respawn are disabled by default. With d
 The `mc-26-1` profile uses `paper-api:26.1.1.build.29-alpha`; the `mc-26` profile uses `paper-api:26.2.build.112-stable`. A dedicated 26.3 build will be added when Paper publishes its API and server build.
 
 For the detailed compatibility matrix and adapter roadmap, see [`COMPATIBILITY.md`](COMPATIBILITY.md).
-
-## Publishing on Modrinth
-
-- Project type: Plugin
-- Supported loaders: Paper, Purpur, Leaf
-- Supported game versions: 1.20.x, 1.21.x, 26.1.x, and 26.2
-- Upload the matching artifact: `target/TrueAuth-1.20.x.jar`, `target/TrueAuth-1.21.x.jar`, `target/TrueAuth-26.1.x.jar`, or `target/TrueAuth-26.2.jar`
-- Use `TrueAuth-icon.png` as the project icon
-- License: GPL-3.0-only
