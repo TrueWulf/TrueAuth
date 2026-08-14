@@ -1,0 +1,40 @@
+name: Build TrueAuth
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-1-20:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn --batch-mode clean package -Pmc-1.20 -DskipTests
+
+  build-1-21:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: mvn --batch-mode clean package -Pmc-1.21 -DskipTests
+
+  build-26:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - run: mvn --batch-mode clean package -Pmc-26-1 -DskipTests
+      - run: mvn --batch-mode clean package -Pmc-26 -DskipTests

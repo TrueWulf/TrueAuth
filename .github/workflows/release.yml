@@ -1,0 +1,57 @@
+name: Release TrueAuth
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 1.20.x
+            profile: mc-1.20
+            java: '17'
+          - name: 1.21.x
+            profile: mc-1.21
+            java: '21'
+          - name: 26.1.x
+            profile: mc-26-1
+            java: '25'
+          - name: 26.2
+            profile: mc-26
+            java: '25'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - run: mvn --batch-mode clean package -P${{ matrix.profile }} -DskipTests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrueAuth-${{ matrix.name }}
+          path: target/TrueAuth-${{ matrix.name }}.jar
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*.jar

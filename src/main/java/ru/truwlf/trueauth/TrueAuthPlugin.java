@@ -87,7 +87,7 @@ public final class TrueAuthPlugin extends JavaPlugin {
     private World createLimboWorld() {
         String name = getConfig().getString("limbo.world", "trueauth_limbo");
         World world = getServer().getWorld(name);
-        if (world != null && getServer().getWorlds().getFirst().equals(world)) {
+        if (world != null && getServer().getWorlds().get(0).equals(world)) {
             throw new IllegalStateException("The limbo world must not be the server's primary world");
         }
         if (world == null) world = new WorldCreator(name).generator(new VoidGenerator()).generateStructures(false).createWorld();

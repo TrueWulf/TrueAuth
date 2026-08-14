@@ -19,7 +19,7 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -56,7 +56,7 @@ final class LimboListener implements Listener {
     @EventHandler(ignoreCancelled = true) void damage(EntityDamageEvent event) { if (event.getEntity() instanceof Player player && blocked(player)) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void damageOther(EntityDamageByEntityEvent event) { if (event.getDamager() instanceof Player player && blocked(player)) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void drop(PlayerDropItemEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
-    @EventHandler(ignoreCancelled = true) void pickup(PlayerPickupItemEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
+    @EventHandler(ignoreCancelled = true) void pickup(EntityPickupItemEvent event) { if (event.getEntity() instanceof Player player && blocked(player)) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void inventory(InventoryClickEvent event) { if (event.getWhoClicked() instanceof Player player && blocked(player)) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void inventoryDrag(InventoryDragEvent event) { if (event.getWhoClicked() instanceof Player player && blocked(player)) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void swapHand(PlayerSwapHandItemsEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
@@ -73,7 +73,7 @@ final class LimboListener implements Listener {
     @EventHandler void respawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         Location deathLocation = deathLocations.remove(player.getUniqueId());
-        if (!plugin.auth().isAuthenticated(player) || player.getRespawnLocation() != null || !plugin.getConfig().getBoolean("spawns.random-respawn.enabled", false)) return;
+        if (!plugin.auth().isAuthenticated(player) || event.getRespawnLocation() != null || !plugin.getConfig().getBoolean("spawns.random-respawn.enabled", false)) return;
         var world = plugin.getServer().getWorld(plugin.getConfig().getString("spawns.random-respawn.world", "world"));
         if (world == null) return;
         int radius = Math.max(1, plugin.getConfig().getInt("spawns.random-respawn.radius", 300));

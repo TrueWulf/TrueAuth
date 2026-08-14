@@ -165,7 +165,7 @@ final class AuthManager {
     private Location configuredLocation(String path) {
         String worldName = plugin.getConfig().getString(path + ".world", "world");
         var world = plugin.getServer().getWorld(worldName);
-        if (world == null) world = plugin.getServer().getWorlds().getFirst();
+        if (world == null) world = plugin.getServer().getWorlds().get(0);
         return new Location(world, plugin.getConfig().getDouble(path + ".x"), plugin.getConfig().getDouble(path + ".y"), plugin.getConfig().getDouble(path + ".z"), (float) plugin.getConfig().getDouble(path + ".yaw"), (float) plugin.getConfig().getDouble(path + ".pitch"));
     }
     private Location savedLocation(Database.SavedLocation location) {

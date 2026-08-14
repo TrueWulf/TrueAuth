@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0
+
+- Added build profiles and versioned artifacts for Minecraft 1.20.x, 1.21.x, 26.1.x, and 26.2.
+- Lowered the shared bytecode target to Java 17 for 1.20.x compatibility.
+- Replaced the deprecated player-only pickup event with `EntityPickupItemEvent`.
+- Added a documented compatibility matrix and adapter roadmap.
+- Added GitHub Actions builds and tag-based release publishing.
+
 ## 1.6.0
 
 - Disabled post-authentication teleports and random respawn by default.
