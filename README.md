@@ -77,7 +77,7 @@ For the detailed compatibility matrix and adapter roadmap, see [`COMPATIBILITY.m
 ## Publishing on Modrinth
 
 - Project type: Plugin
-- Supported loaders: Paper, Purpur, Leaves
+- Supported loaders: Paper, Purpur, Leaf
 - Supported game versions: 1.20.x, 1.21.x, 26.1.x, and 26.2
 - Upload the matching artifact: `target/TrueAuth-1.20.x.jar`, `target/TrueAuth-1.21.x.jar`, `target/TrueAuth-26.1.x.jar`, or `target/TrueAuth-26.2.jar`
 - Use `TrueAuth-icon.png` as the project icon
