@@ -1,6 +1,6 @@
 # TrueAuth
 
-TrueAuth is a lightweight registration and login plugin for Paper and Purpur servers running Minecraft 1.20.x, 1.21.x, and 26.x. It isolates unauthenticated players in a void limbo and protects their inventory.
+TrueAuth is a lightweight registration and login plugin for Bukkit-compatible servers running Minecraft 1.20.x, 1.21.x, and 26.x. It isolates unauthenticated players in a void limbo and protects their inventory.
 
 ## Features
 
@@ -15,9 +15,9 @@ TrueAuth is a lightweight registration and login plugin for Paper and Purpur ser
 ## Requirements
 
 - Java 17 for 1.20.x, Java 21 for 1.21.x, and Java 25 for 26.x
-- Paper or Purpur for Minecraft 1.20.x, 1.21.x, or 26.x
+- A Bukkit-compatible server core for Minecraft 1.20.x, 1.21.x, or 26.x
 
-TrueAuth uses the Paper API. Paper-family forks such as Purpur, Pufferfish, Leaf, Patina, Mohist, and Magma may work when they expose the selected Paper API, but the release artifacts are compiled and tested against Paper. Folia, Spigot-only servers, Velocity, Waterfall, and Sponge require separate adapters and are not included in this release.
+TrueAuth targets Bukkit-compatible server cores: Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. The same versioned artifact is used on compatible cores. Sponge is supported by a separate Sponge API 8.2 adapter; Velocity and Waterfall require separate proxy modules.
 
 ## Installation
 
@@ -64,12 +64,16 @@ Post-authentication teleports and random respawn are disabled by default. With d
 
 | Target | Build command | Java | Status |
 | --- | --- | --- | --- |
-| Paper/Purpur 1.20.x | `mvn package -Pmc-1.20` | 17 | Supported |
-| Paper/Purpur 1.21.x | `mvn package -Pmc-1.21` | 21 | Supported |
-| Paper/Purpur 26.1/26.1.1 | `mvn package -Pmc-26-1` | 25 to build/run | Supported |
-| Paper/Purpur 26.2 | `mvn package -Pmc-26` | 25 to build/run | Supported |
-| Paper/Purpur 26.3 | Not available yet | 25 | Pending official Paper API/build |
+| Bukkit-compatible 1.20.x | `mvn package -Pspigot-1.20` | 17 | Supported |
+| Bukkit-compatible 1.21.x | `mvn package -Pspigot-1.21` | 21 | Supported |
+| Paper-family 1.20.x | `mvn package -Pmc-1.20` | 17 | Supported |
+| Paper-family 1.21.x | `mvn package -Pmc-1.21` | 21 | Supported |
+| Paper-family 26.x | See separate 26.1/26.2 artifacts below | 25 to build/run | Supported |
+| 26.3 | Not available yet | 25 | Pending official Paper API/build |
+| Sponge API 8.2.x | `mvn -f sponge/pom.xml package` | 17 | Build verified; runtime pending |
 
-The `mc-26-1` profile uses `paper-api:26.1.1.build.29-alpha`; the `mc-26` profile uses `paper-api:26.2.build.112-stable`. A dedicated 26.3 build will be added when Paper publishes its API and server build.
-
-For the detailed compatibility matrix and adapter roadmap, see [`COMPATIBILITY.md`](COMPATIBILITY.md).
+ The Bukkit-compatible core list is: Paper, Purpur, Spigot, Pufferfish, Leaf, Patina, Arclight, Mohist, and Folia. Sponge servers use the separate `TrueAuth-Sponge-8.x.jar` adapter and must not use the Bukkit/Paper JAR.
+ 
+ Minecraft 26.x currently remains two separate release artifacts: `TrueAuth-26.1.x.jar` is built with `paper-api:26.1.1.build.29-alpha`, and `TrueAuth-26.2.jar` with `paper-api:26.2.build.112-stable`. A dedicated 26.3 build will be added when Paper publishes its API and server build.
+ 
+ For the detailed compatibility matrix and adapter roadmap, see [`COMPATIBILITY.md`](COMPATIBILITY.md).

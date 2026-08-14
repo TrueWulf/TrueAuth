@@ -1,9 +1,10 @@
 name: TrueAuth
-version: 2.1.0
+version: 2.2.0
 main: ru.truwlf.trueauth.TrueAuthPlugin
 api-version: '1.20'
 author: TrueWulf
-description: Lightweight registration and login plugin for Paper and Purpur 1.20.x, 1.21.x, and 26.x.
+description: Lightweight authentication plugin for Bukkit-compatible server cores.
+folia-supported: true
 commands:
   register:
     usage: /register <password> <confirmPassword>

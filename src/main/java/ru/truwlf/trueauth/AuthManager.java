@@ -1,12 +1,12 @@
 package ru.truwlf.trueauth;
 
-import net.kyori.adventure.title.Title;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.time.Duration;
 import java.util.Map;
@@ -23,7 +23,7 @@ final class AuthManager {
     private final Map<UUID, Boolean> allowFlight = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> flying = new ConcurrentHashMap<>();
     private final Map<UUID, Location> locations = new ConcurrentHashMap<>();
-    private final Map<UUID, BukkitTask> timeouts = new ConcurrentHashMap<>();
+    private final Map<UUID, PlatformScheduler.TaskHandle> timeouts = new ConcurrentHashMap<>();
     private final Set<UUID> registered = ConcurrentHashMap.newKeySet();
     AuthManager(TrueAuthPlugin plugin) { this.plugin = plugin; }
     boolean isAuthenticated(Player player) { return !unauthenticated.contains(player.getUniqueId()); }
@@ -50,13 +50,13 @@ final class AuthManager {
             }
         }
         int seconds = plugin.getConfig().getInt("auth.login-timeout-seconds", 60);
-        if (plugin.getConfig().getBoolean("auth.kick-on-timeout", true) && seconds > 0) timeouts.put(id, plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!isAuthenticated(player)) player.kick(plugin.locale().message("timeout"));
+        if (plugin.getConfig().getBoolean("auth.kick-on-timeout", true) && seconds > 0) timeouts.put(id, plugin.scheduler().runLater(player, () -> {
+            if (!isAuthenticated(player)) player.kickPlayer(plugin.locale().message("timeout"));
         }, seconds * 20L));
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 boolean exists = plugin.database().passwordHash(id).isPresent();
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                plugin.scheduler().run(player, () -> {
                     if (!player.isOnline() || isAuthenticated(player)) return;
                     if (exists) registered.add(id);
                     showAuthenticationTitle(player, exists);
@@ -65,19 +65,19 @@ final class AuthManager {
         });
     }
     void startPrompts() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> plugin.getServer().getOnlinePlayers().stream()
+        plugin.scheduler().runTimer(() -> plugin.getServer().getOnlinePlayers().stream()
                 .filter(player -> !isAuthenticated(player))
-                .forEach(player -> player.sendActionBar(plugin.locale().message(isRegistered(player) ? "login-prompt" : "register-prompt"))), 1L, 20L);
+                .forEach(player -> plugin.scheduler().run(player, () -> player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(plugin.locale().message(isRegistered(player) ? "login-prompt" : "register-prompt"))))), 1L, 20L);
     }
     void showAuthenticationTitle(Player player, boolean isRegistered) {
         if (isAuthenticated(player)) return;
         String prefix = isRegistered ? "login" : "register";
-        player.showTitle(Title.title(plugin.locale().message(prefix + "-title"), plugin.locale().message(prefix + "-subtitle"), Title.Times.times(Duration.ZERO, Duration.ofSeconds(5), Duration.ofMillis(250))));
+        player.sendTitle(plugin.locale().message(prefix + "-title"), plugin.locale().message(prefix + "-subtitle"), 0, 100, 5);
     }
     boolean authenticate(Player player, boolean newlyRegistered, Database.SavedLocation savedLocation) {
         UUID id = player.getUniqueId();
         if (!unauthenticated.remove(id)) return false;
-        BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
+        PlatformScheduler.TaskHandle timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
         restorePlayerState(player, id);
         GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
         InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
@@ -97,7 +97,7 @@ final class AuthManager {
     void leave(Player player) {
         UUID id = player.getUniqueId();
         unauthenticated.remove(id);
-        BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
+        PlatformScheduler.TaskHandle timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
         restorePlayerState(player, id);
         InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
         GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
@@ -108,7 +108,7 @@ final class AuthManager {
         plugin.getServer().getOnlinePlayers().forEach(player -> {
             UUID id = player.getUniqueId();
             if (!unauthenticated.remove(id)) return;
-            BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
+            PlatformScheduler.TaskHandle timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
             restorePlayerState(player, id);
             GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
             InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());

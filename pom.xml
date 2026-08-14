@@ -4,10 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ru.truwlf</groupId>
     <artifactId>trueauth</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <server-api.groupId>io.papermc.paper</server-api.groupId>
+        <server-api.artifactId>paper-api</server-api.artifactId>
         <paper-api.version>1.20.1-R0.1-SNAPSHOT</paper-api.version>
         <artifact.suffix>1.20.x</artifact.suffix>
     </properties>
@@ -19,8 +21,8 @@
     </repositories>
     <dependencies>
         <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
+            <groupId>${server-api.groupId}</groupId>
+            <artifactId>${server-api.artifactId}</artifactId>
             <version>${paper-api.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -44,19 +46,39 @@
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-minimessage</artifactId>
+            <version>4.17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-legacy</artifactId>
+            <version>4.17.0</version>
+        </dependency>
     </dependencies>
     <build>
-            <finalName>TrueAuth-${artifact.suffix}</finalName>
+        <finalName>TrueAuth-${artifact.suffix}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration><createDependencyReducedPom>false</createDependencyReducedPom><relocations><relocation><pattern>com.zaxxer.hikari</pattern><shadedPattern>ru.truwlf.trueauth.lib.hikari</shadedPattern></relocation><relocation><pattern>org.mindrot</pattern><shadedPattern>ru.truwlf.trueauth.lib.bcrypt</shadedPattern></relocation></relocations></configuration></execution></executions>
+                <version>3.6.1</version>
+                <executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration><createDependencyReducedPom>false</createDependencyReducedPom><relocations><relocation><pattern>com.zaxxer.hikari</pattern><shadedPattern>ru.truwlf.trueauth.lib.hikari</shadedPattern></relocation><relocation><pattern>org.mindrot</pattern><shadedPattern>ru.truwlf.trueauth.lib.bcrypt</shadedPattern></relocation><relocation><pattern>net.kyori</pattern><shadedPattern>ru.truwlf.trueauth.lib.adventure</shadedPattern></relocation></relocations></configuration></execution></executions>
             </plugin>
         </plugins>
     </build>
     <profiles>
+        <profile>
+            <id>spigot-1.20</id>
+            <properties>
+                <server-api.groupId>org.spigotmc</server-api.groupId>
+                <server-api.artifactId>spigot-api</server-api.artifactId>
+                <paper-api.version>1.20.1-R0.1-SNAPSHOT</paper-api.version>
+                <artifact.suffix>Spigot-1.20.x</artifact.suffix>
+                <maven.compiler.release>17</maven.compiler.release>
+            </properties>
+        </profile>
         <profile>
             <id>mc-1.20</id>
             <activation><activeByDefault>true</activeByDefault></activation>
@@ -64,6 +86,16 @@
                 <paper-api.version>1.20.1-R0.1-SNAPSHOT</paper-api.version>
                 <artifact.suffix>1.20.x</artifact.suffix>
                 <maven.compiler.release>17</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>spigot-1.21</id>
+            <properties>
+                <server-api.groupId>org.spigotmc</server-api.groupId>
+                <server-api.artifactId>spigot-api</server-api.artifactId>
+                <paper-api.version>1.21.1-R0.1-SNAPSHOT</paper-api.version>
+                <artifact.suffix>Spigot-1.21.x</artifact.suffix>
+                <maven.compiler.release>21</maven.compiler.release>
             </properties>
         </profile>
         <profile>
@@ -79,7 +111,7 @@
             <properties>
                 <paper-api.version>26.1.1.build.29-alpha</paper-api.version>
                 <artifact.suffix>26.1.x</artifact.suffix>
-                <maven.compiler.release>21</maven.compiler.release>
+                <maven.compiler.release>25</maven.compiler.release>
             </properties>
         </profile>
         <profile>
@@ -87,7 +119,7 @@
             <properties>
                 <paper-api.version>26.2.build.112-stable</paper-api.version>
                 <artifact.suffix>26.2</artifact.suffix>
-                <maven.compiler.release>21</maven.compiler.release>
+                <maven.compiler.release>25</maven.compiler.release>
             </properties>
         </profile>
     </profiles>

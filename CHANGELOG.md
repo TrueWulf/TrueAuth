@@ -8,6 +8,15 @@
 - Added a documented compatibility matrix and adapter roadmap.
 - Added GitHub Actions builds and tag-based release publishing.
 
+## 2.2.0
+
+- Removed the Paper-only chat event and isolated Adventure formatting behind shaded dependencies.
+- Added Bukkit/Spigot API profiles for 1.20.x and 1.21.x.
+- Added runtime scheduler selection for Bukkit and Folia servers.
+- Added Spigot, Arclight, and Bukkit-compatible core documentation.
+- Replaced Magma with Arclight in the supported-core list.
+- Added an independent Sponge API 8.2 adapter artifact.
+
 ## 1.6.0
 
 - Disabled post-authentication teleports and random respawn by default.

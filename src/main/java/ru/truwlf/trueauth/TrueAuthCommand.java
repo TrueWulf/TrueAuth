@@ -65,35 +65,35 @@ final class TrueAuthCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean status(CommandSender sender, Player target) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 boolean registered = plugin.database().passwordHash(target.getUniqueId()).isPresent();
                 String location = plugin.database().lastLocation(target.getUniqueId()).map(value -> value.world() + " " + String.format(Locale.ROOT, "%.1f %.1f %.1f", value.x(), value.y(), value.z())).orElse("-");
-                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.locale().message("admin-status", java.util.Map.of("player", target.getName(), "account", registered ? "registered" : "not registered", "auth", plugin.auth().isAuthenticated(target) ? "authenticated" : "waiting", "location", location))));
+                plugin.scheduler().run(target, () -> sender.sendMessage(plugin.locale().message("admin-status", java.util.Map.of("player", target.getName(), "account", registered ? "registered" : "not registered", "auth", plugin.auth().isAuthenticated(target) ? "authenticated" : "waiting", "location", location))));
             } catch (SQLException exception) { databaseError(sender); }
         });
         return true;
     }
 
     private boolean unregister(CommandSender sender, Player target) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 plugin.database().delete(target.getUniqueId());
-                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.locale().message("admin-unregistered", java.util.Map.of("player", target.getName()))));
+                plugin.scheduler().run(target, () -> sender.sendMessage(plugin.locale().message("admin-unregistered", java.util.Map.of("player", target.getName()))));
             } catch (SQLException exception) { databaseError(sender); }
         });
         return true;
     }
 
     private boolean resetPassword(CommandSender sender, Player target, String password) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 if (plugin.database().passwordHash(target.getUniqueId()).isEmpty()) {
-                    plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.locale().message("not-registered")));
+                    plugin.scheduler().run(target, () -> sender.sendMessage(plugin.locale().message("not-registered")));
                     return;
                 }
                 plugin.database().update(target.getUniqueId(), BCrypt.hashpw(password, BCrypt.gensalt(12)));
-                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.locale().message("admin-password-reset", java.util.Map.of("player", target.getName()))));
+                plugin.scheduler().run(target, () -> sender.sendMessage(plugin.locale().message("admin-password-reset", java.util.Map.of("player", target.getName()))));
             } catch (SQLException exception) { databaseError(sender); }
         });
         return true;
@@ -101,7 +101,11 @@ final class TrueAuthCommand implements CommandExecutor, TabCompleter {
 
     private boolean help(CommandSender sender) { sender.sendMessage(plugin.locale().message("admin-help")); return true; }
     private boolean denied(CommandSender sender) { sender.sendMessage(plugin.locale().message("no-permission")); return true; }
-    private void databaseError(CommandSender sender) { plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.locale().message("database-error"))); }
+    private void databaseError(CommandSender sender) {
+        Runnable message = () -> sender.sendMessage(plugin.locale().message("database-error"));
+        if (sender instanceof Player player) plugin.scheduler().run(player, message);
+        else plugin.scheduler().runGlobal(message);
+    }
 
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {

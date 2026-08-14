@@ -34,7 +34,7 @@ final class AuthCommands implements CommandExecutor {
         if (!args[0].equals(args[1])) { player.sendMessage(plugin.locale().message("password-mismatch")); return true; }
         if (!valid(player, args[0])) return true;
         if (!begin(player)) return true;
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 if (plugin.database().passwordHash(player.getUniqueId()).isPresent()) result(player, "already-registered", false);
                 else {
@@ -50,7 +50,7 @@ final class AuthCommands implements CommandExecutor {
         if (!allowed(player)) return true;
         if (args.length != 1) { player.sendMessage(plugin.locale().message("usage-login")); return true; }
         if (!begin(player)) return true;
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 var hash = plugin.database().passwordHash(player.getUniqueId());
                 if (hash.isEmpty()) result(player, "not-registered", false);
@@ -65,7 +65,7 @@ final class AuthCommands implements CommandExecutor {
         if (args.length != 2) { player.sendMessage(plugin.locale().message("usage-change-password")); return true; }
         if (!valid(player, args[1])) return true;
         if (!begin(player)) return true;
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 var hash = plugin.database().passwordHash(player.getUniqueId());
                 if (hash.isEmpty() || !BCrypt.checkpw(args[0], hash.get())) result(player, "wrong-password", false);
@@ -96,7 +96,7 @@ final class AuthCommands implements CommandExecutor {
     private void result(Player player, String key, boolean authenticate) { result(player, key, authenticate, false, null); }
     private void result(Player player, String key, boolean authenticate, boolean newlyRegistered) { result(player, key, authenticate, newlyRegistered, null); }
     private void result(Player player, String key, boolean authenticate, boolean newlyRegistered, Database.SavedLocation savedLocation) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.scheduler().run(player, () -> {
             inFlight.remove(player.getUniqueId());
             if (!player.isOnline()) return;
             if (!authenticate || plugin.auth().authenticate(player, newlyRegistered, savedLocation)) player.sendMessage(plugin.locale().message(key));

@@ -1,6 +1,5 @@
 package ru.truwlf.trueauth;
 
-import io.papermc.paper.event.player.AsyncChatEvent;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.Location;
@@ -12,6 +11,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -47,7 +47,7 @@ final class LimboListener implements Listener {
         if (plugin.auth().isAuthenticated(player)) saveLocation(player);
         plugin.auth().leave(player);
     }
-    @EventHandler(ignoreCancelled = true) void chat(AsyncChatEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
+    @EventHandler(ignoreCancelled = true) void chat(AsyncPlayerChatEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void command(PlayerCommandPreprocessEvent event) {
         if (!blocked(event.getPlayer())) return;
         String command = event.getMessage().split(" ", 2)[0].toLowerCase();
@@ -84,7 +84,7 @@ final class LimboListener implements Listener {
         event.setRespawnLocation(location);
         if (deathLocation == null) deathLocation = player.getLocation();
         Location messageLocation = deathLocation;
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.scheduler().run(player, () -> {
             if (player.isOnline()) player.sendMessage(plugin.locale().message("random-respawn", Map.of("x", String.valueOf(messageLocation.getBlockX()), "y", String.valueOf(messageLocation.getBlockY()), "z", String.valueOf(messageLocation.getBlockZ()))));
         });
     }
@@ -109,7 +109,7 @@ final class LimboListener implements Listener {
         var location = player.getLocation();
         if (location.getWorld() == null || location.getWorld().equals(plugin.limboWorld())) return;
         Database.SavedLocation saved = new Database.SavedLocation(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 plugin.database().saveLastLocation(player.getUniqueId(), saved);
             } catch (SQLException exception) {

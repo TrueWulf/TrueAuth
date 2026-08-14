@@ -14,6 +14,7 @@ public final class TrueAuthPlugin extends JavaPlugin {
     private Database database;
     private LocaleManager locale;
     private AuthManager auth;
+    private PlatformScheduler scheduler;
     private World limboWorld;
 
     @Override public void onEnable() {
@@ -35,6 +36,7 @@ public final class TrueAuthPlugin extends JavaPlugin {
             return;
         }
         auth = new AuthManager(this);
+        scheduler = new PlatformScheduler(this);
         limboWorld = createLimboWorld();
         auth.startPrompts();
         getServer().getPluginManager().registerEvents(new LimboListener(this), this);
@@ -54,6 +56,7 @@ public final class TrueAuthPlugin extends JavaPlugin {
     Database database() { return database; }
     LocaleManager locale() { return locale; }
     AuthManager auth() { return auth; }
+    PlatformScheduler scheduler() { return scheduler; }
     World limboWorld() { return limboWorld; }
     void reloadPluginConfig() {
         reloadConfig();

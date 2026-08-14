@@ -19,8 +19,14 @@ jobs:
           - name: 1.20.x
             profile: mc-1.20
             java: '17'
+          - name: Spigot-1.20.x
+            profile: spigot-1.20
+            java: '17'
           - name: 1.21.x
             profile: mc-1.21
+            java: '21'
+          - name: Spigot-1.21.x
+            profile: spigot-1.21
             java: '21'
           - name: 26.1.x
             profile: mc-26-1
@@ -28,6 +34,9 @@ jobs:
           - name: 26.2
             profile: mc-26
             java: '25'
+          - name: Sponge-8.x
+            profile: sponge
+            java: '17'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -35,11 +44,11 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - run: mvn --batch-mode clean package -P${{ matrix.profile }} -DskipTests
+      - run: if [ "${{ matrix.profile }}" = "sponge" ]; then mvn --batch-mode -f sponge/pom.xml clean package -DskipTests; else mvn --batch-mode clean package -P${{ matrix.profile }} -DskipTests; fi
       - uses: actions/upload-artifact@v4
         with:
           name: TrueAuth-${{ matrix.name }}
-          path: target/TrueAuth-${{ matrix.name }}.jar
+          path: ${{ matrix.profile == 'sponge' && 'sponge/target/TrueAuth-Sponge-8.x.jar' || format('target/TrueAuth-{0}.jar', matrix.name) }}
           if-no-files-found: error
 
   publish:
