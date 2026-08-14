@@ -55,6 +55,10 @@ final class TrueAuthCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(plugin.locale().message("password-length", java.util.Map.of("min", String.valueOf(min), "max", String.valueOf(max))));
                 return true;
             }
+            if (args[2].getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+                sender.sendMessage(plugin.locale().message("password-too-long"));
+                return true;
+            }
             return resetPassword(sender, target, args[2]);
         }
         return help(sender);

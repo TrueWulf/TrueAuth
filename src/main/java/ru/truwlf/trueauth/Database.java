@@ -20,7 +20,8 @@ final class Database implements AutoCloseable {
         HikariConfig hikari = new HikariConfig();
         mysql = config.getString("database.type", "SQLITE").equalsIgnoreCase("MYSQL");
         if (mysql) {
-            hikari.setJdbcUrl("jdbc:mysql://" + config.getString("database.mysql.host") + ":" + config.getInt("database.mysql.port") + "/" + config.getString("database.mysql.database") + "?useSSL=false&allowPublicKeyRetrieval=true");
+            String ssl = config.getBoolean("database.mysql.use-ssl", true) ? "true" : "false";
+            hikari.setJdbcUrl("jdbc:mysql://" + config.getString("database.mysql.host") + ":" + config.getInt("database.mysql.port") + "/" + config.getString("database.mysql.database") + "?useSSL=" + ssl + "&allowPublicKeyRetrieval=false&serverTimezone=UTC");
             hikari.setUsername(config.getString("database.mysql.username"));
             hikari.setPassword(config.getString("database.mysql.password"));
             hikari.setDriverClassName("com.mysql.cj.jdbc.Driver");
@@ -68,11 +69,16 @@ final class Database implements AutoCloseable {
     void delete(UUID uuid) throws SQLException {
         try (Connection connection = source.getConnection(); PreparedStatement user = connection.prepareStatement("DELETE FROM trueauth_users WHERE uuid = ?"); PreparedStatement location = connection.prepareStatement("DELETE FROM trueauth_locations WHERE uuid = ?")) {
             connection.setAutoCommit(false);
-            user.setString(1, uuid.toString());
-            location.setString(1, uuid.toString());
-            user.executeUpdate();
-            location.executeUpdate();
-            connection.commit();
+            try {
+                user.setString(1, uuid.toString());
+                location.setString(1, uuid.toString());
+                user.executeUpdate();
+                location.executeUpdate();
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            }
         }
     }
 

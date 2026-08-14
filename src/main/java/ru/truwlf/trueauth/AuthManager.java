@@ -19,6 +19,9 @@ final class AuthManager {
     private final Set<UUID> unauthenticated = ConcurrentHashMap.newKeySet();
     private final Map<UUID, InventorySnapshot> inventories = new ConcurrentHashMap<>();
     private final Map<UUID, GameMode> gameModes = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> invulnerable = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> allowFlight = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> flying = new ConcurrentHashMap<>();
     private final Map<UUID, Location> locations = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> timeouts = new ConcurrentHashMap<>();
     private final Set<UUID> registered = ConcurrentHashMap.newKeySet();
@@ -29,12 +32,14 @@ final class AuthManager {
         UUID id = player.getUniqueId();
         unauthenticated.add(id);
         gameModes.put(id, player.getGameMode());
+        invulnerable.put(id, player.isInvulnerable());
+        allowFlight.put(id, player.getAllowFlight());
+        flying.put(id, player.isFlying());
         locations.put(id, player.getLocation().clone());
         if (plugin.getConfig().getBoolean("limbo.hide-inventory", true)) {
             inventories.put(id, InventorySnapshot.capture(player.getInventory()));
             InventorySnapshot.clear(player.getInventory());
         }
-        player.setInvisible(false);
         player.setInvulnerable(true);
         player.setGameMode(GameMode.SPECTATOR);
         player.teleport(limboLocation());
@@ -69,11 +74,11 @@ final class AuthManager {
         String prefix = isRegistered ? "login" : "register";
         player.showTitle(Title.title(plugin.locale().message(prefix + "-title"), plugin.locale().message(prefix + "-subtitle"), Title.Times.times(Duration.ZERO, Duration.ofSeconds(5), Duration.ofMillis(250))));
     }
-    void authenticate(Player player, boolean newlyRegistered, Database.SavedLocation savedLocation) {
+    boolean authenticate(Player player, boolean newlyRegistered, Database.SavedLocation savedLocation) {
         UUID id = player.getUniqueId();
-        if (!unauthenticated.remove(id)) return;
+        if (!unauthenticated.remove(id)) return false;
         BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
-        player.setInvulnerable(false);
+        restorePlayerState(player, id);
         GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
         InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
         for (Player other : plugin.getServer().getOnlinePlayers()) {
@@ -87,11 +92,13 @@ final class AuthManager {
         if (destination != null) player.teleport(destination);
         registered.remove(id);
         player.resetTitle();
+        return true;
     }
     void leave(Player player) {
         UUID id = player.getUniqueId();
         unauthenticated.remove(id);
         BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
+        restorePlayerState(player, id);
         InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
         GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
         locations.remove(id);
@@ -102,6 +109,7 @@ final class AuthManager {
             UUID id = player.getUniqueId();
             if (!unauthenticated.remove(id)) return;
             BukkitTask timeout = timeouts.remove(id); if (timeout != null) timeout.cancel();
+            restorePlayerState(player, id);
             GameMode mode = gameModes.remove(id); if (mode != null) player.setGameMode(mode);
             InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
             Location location = locations.remove(id); if (location != null) player.teleport(location);
@@ -114,6 +122,29 @@ final class AuthManager {
                 }
             });
         });
+    }
+    void saveAuthenticatedLocations() {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (isAuthenticated(player)) saveLocationSynchronously(player);
+        }
+    }
+    private void saveLocationSynchronously(Player player) {
+        Location location = player.getLocation();
+        if (location.getWorld() == null || location.getWorld().equals(plugin.limboWorld())) return;
+        Database.SavedLocation saved = new Database.SavedLocation(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        try {
+            plugin.database().saveLastLocation(player.getUniqueId(), saved);
+        } catch (Exception exception) {
+            plugin.getLogger().warning("Could not save logout location for " + player.getName() + ": " + exception.getMessage());
+        }
+    }
+    private void restorePlayerState(Player player, UUID id) {
+        Boolean previousInvulnerable = invulnerable.remove(id);
+        if (previousInvulnerable != null) player.setInvulnerable(previousInvulnerable);
+        Boolean previousAllowFlight = allowFlight.remove(id);
+        if (previousAllowFlight != null) player.setAllowFlight(previousAllowFlight);
+        Boolean previousFlying = flying.remove(id);
+        if (previousFlying != null && Boolean.TRUE.equals(previousAllowFlight)) player.setFlying(previousFlying);
     }
     private Location registrationLocation() { return configuredLocation("spawns.registration"); }
     private Location loginFallbackLocation() { return configuredLocation("spawns.login-fallback"); }

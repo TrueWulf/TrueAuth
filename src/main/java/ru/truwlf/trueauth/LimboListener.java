@@ -14,6 +14,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -22,6 +23,7 @@ import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
 import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -56,6 +58,8 @@ final class LimboListener implements Listener {
     @EventHandler(ignoreCancelled = true) void drop(PlayerDropItemEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void pickup(PlayerPickupItemEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void inventory(InventoryClickEvent event) { if (event.getWhoClicked() instanceof Player player && blocked(player)) event.setCancelled(true); }
+    @EventHandler(ignoreCancelled = true) void inventoryDrag(InventoryDragEvent event) { if (event.getWhoClicked() instanceof Player player && blocked(player)) event.setCancelled(true); }
+    @EventHandler(ignoreCancelled = true) void swapHand(PlayerSwapHandItemsEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void interact(PlayerInteractEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void breakBlock(BlockBreakEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(ignoreCancelled = true) void placeBlock(BlockPlaceEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }

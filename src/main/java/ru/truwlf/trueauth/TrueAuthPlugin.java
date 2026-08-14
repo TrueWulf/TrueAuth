@@ -38,14 +38,19 @@ public final class TrueAuthPlugin extends JavaPlugin {
         limboWorld = createLimboWorld();
         auth.startPrompts();
         getServer().getPluginManager().registerEvents(new LimboListener(this), this);
-        Objects.requireNonNull(getCommand("register")).setExecutor(new AuthCommands(this));
-        Objects.requireNonNull(getCommand("login")).setExecutor(new AuthCommands(this));
-        Objects.requireNonNull(getCommand("changepassword")).setExecutor(new AuthCommands(this));
+        AuthCommands authCommands = new AuthCommands(this);
+        Objects.requireNonNull(getCommand("register")).setExecutor(authCommands);
+        Objects.requireNonNull(getCommand("login")).setExecutor(authCommands);
+        Objects.requireNonNull(getCommand("changepassword")).setExecutor(authCommands);
         TrueAuthCommand adminCommand = new TrueAuthCommand(this);
         Objects.requireNonNull(getCommand("trueauth")).setExecutor(adminCommand);
         Objects.requireNonNull(getCommand("trueauth")).setTabCompleter(adminCommand);
     }
-    @Override public void onDisable() { if (auth != null) auth.restoreAll(); if (database != null) database.close(); }
+    @Override public void onDisable() {
+        if (auth != null) auth.saveAuthenticatedLocations();
+        if (auth != null) auth.restoreAll();
+        if (database != null) database.close();
+    }
     Database database() { return database; }
     LocaleManager locale() { return locale; }
     AuthManager auth() { return auth; }
@@ -66,6 +71,12 @@ public final class TrueAuthPlugin extends JavaPlugin {
             getConfig().set("auth.command-cooldown-millis", 0);
             changed = true;
         }
+        int timeout = getConfig().getInt("auth.login-timeout-seconds", 60);
+        int safeTimeout = Math.min(Math.max(0, timeout), 86400);
+        if (timeout != safeTimeout) {
+            getConfig().set("auth.login-timeout-seconds", safeTimeout);
+            changed = true;
+        }
         if (getConfig().getInt("spawns.random-respawn.radius", 300) < 1) {
             getConfig().set("spawns.random-respawn.radius", 1);
             changed = true;
@@ -76,6 +87,9 @@ public final class TrueAuthPlugin extends JavaPlugin {
     private World createLimboWorld() {
         String name = getConfig().getString("limbo.world", "trueauth_limbo");
         World world = getServer().getWorld(name);
+        if (world != null && getServer().getWorlds().getFirst().equals(world)) {
+            throw new IllegalStateException("The limbo world must not be the server's primary world");
+        }
         if (world == null) world = new WorldCreator(name).generator(new VoidGenerator()).generateStructures(false).createWorld();
         if (world == null) throw new IllegalStateException("Could not create limbo world");
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);

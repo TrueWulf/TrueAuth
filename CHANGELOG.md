@@ -23,3 +23,13 @@
 - Added `/trueauth` administrative commands, permissions, and tab completion.
 - Added command cooldown protection for registration and login attempts.
 - Added English and Russian messages for random respawn coordinates.
+
+## 2.0.0
+
+- Prevented concurrent authentication requests for the same player.
+- Preserved cursor items and player flight/invulnerability state through limbo.
+- Saved authenticated logout locations during plugin shutdown.
+- Secured dynamic locale values against MiniMessage tag injection.
+- Added inventory drag and off-hand swap protection before authentication.
+- Enabled configurable TLS for MySQL connections by default.
+- Validated limbo world and authentication timeout configuration.

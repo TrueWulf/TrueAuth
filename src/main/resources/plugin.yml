@@ -1,5 +1,5 @@
 name: TrueAuth
-version: 1.6.0
+version: 2.0.0
 main: ru.truwlf.trueauth.TrueAuthPlugin
 api-version: '1.21'
 author: TrueWulf

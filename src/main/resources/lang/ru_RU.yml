@@ -14,6 +14,8 @@ not-registered: "<red>Этот аккаунт не зарегистрирова�
 wrong-password: "<red>Неверный пароль."
 password-mismatch: "<red>Пароли не совпадают."
 password-length: "<red>Пароль должен содержать от <min> до <max> символов."
+password-too-long: "<red>Пароль слишком длинный для выбранного формата хеширования. Используйте не более 72 байт."
+auth-processing: "<yellow>Предыдущий запрос авторизации еще обрабатывается."
 usage-register: "<red>Использование: /register <password> <confirmPassword>"
 usage-login: "<red>Использование: /login <password>"
 usage-change-password: "<red>Использование: /changepassword <oldPassword> <newPassword>"

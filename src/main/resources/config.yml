@@ -65,3 +65,5 @@ database:
     database: "trueauth"
     username: "root"
     password: ""
+    # Keep enabled in production. Disable only for a trusted local database connection.
+    use-ssl: true
