@@ -2,9 +2,9 @@
 
 # TrueAuth
 
-**Fast, lightweight registration and authentication for Minecraft servers.**
+**Fast, lightweight authentication for Minecraft servers.**
 
-Secure player accounts with BCrypt, SQLite or MySQL, a protected pre-login state, and a clean setup for modern Bukkit-compatible cores.
+Protect player accounts with BCrypt, SQLite or MySQL and a secure pre-login state. TrueAuth is available for Bukkit, Paper, Folia, Sponge, Velocity, and Waterfall, with separate artifacts for each platform.
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.20.x%20%7C%201.21.x%20%7C%2026.x-2ea043?style=flat-square)
 ![Java](https://img.shields.io/badge/Java-17%20%7C%2021%20%7C%2025-e76f00?style=flat-square)
@@ -17,7 +17,15 @@ Secure player accounts with BCrypt, SQLite or MySQL, a protected pre-login state
 
 ## Overview
 
-TrueAuth keeps players in a protected state until they register or log in. It is designed to stay small, quick to start, and easy to configure on both classic Bukkit servers and modern Paper-family forks.
+TrueAuth is a small, fast, and easy-to-configure authentication solution for Minecraft networks and standalone servers. Players remain in a protected state until they register or log in, while password handling, database access, timeouts, and platform-specific scheduling are kept safe and efficient.
+
+It works across the most common Minecraft server and proxy platforms without forcing one plugin artifact to do everything:
+
+- **Bukkit, Paper, and Folia** for standalone servers and Paper-family networks
+- **Sponge** through a dedicated Sponge 8.2.x plugin
+- **Velocity** and **Waterfall** through dedicated proxy adapters
+
+The project is designed to be lightweight in runtime overhead, quick to start, and straightforward to deploy on both small servers and multi-server networks.
 
 ## Features
 
@@ -27,13 +35,16 @@ TrueAuth keeps players in a protected state until they register or log in. It is
 - Localized titles, ActionBar prompts, and messages
 - BCrypt password hashing
 - SQLite or MySQL storage on Bukkit/Paper
+- SQLite or MySQL storage for proxy authentication
+- TLS support for proxy MySQL connections
+- Authentication timeouts, rate limits, and protection against concurrent login attempts
 - Saved logout locations and configurable login fallbacks
 - Optional safe random respawn ring
 - Permission-aware administration commands
 
 ## Compatibility
 
-### Bukkit and Paper
+### Bukkit, Paper, and Folia
 
 | Minecraft | Artifact | Java | Build status |
 | --- | --- | --- | --- |
@@ -69,12 +80,31 @@ Do not install proxy JARs in a Bukkit/Paper/Sponge server, or Bukkit JARs in a p
 
 The proxy adapters authenticate players before backend forwarding. Use MySQL when multiple proxy instances must share accounts; SQLite is intended for a single proxy instance.
 
+## Choose The Right Artifact
+
+Install only the artifact matching your platform:
+
+| Platform | Artifact |
+| --- | --- |
+| Paper, Folia, Purpur, or Bukkit-compatible server on Minecraft 1.20.x | `TrueAuth-1.20.x.jar` |
+| Spigot or a Spigot-compatible server on Minecraft 1.20.x | `TrueAuth-Spigot-1.20.x.jar` |
+| Paper-family or Bukkit-compatible server on Minecraft 1.21.x | `TrueAuth-1.21.x.jar` |
+| Spigot or a Spigot-compatible server on Minecraft 1.21.x | `TrueAuth-Spigot-1.21.x.jar` |
+| Paper-family server on Minecraft 26.1.x or 26.2 | matching `TrueAuth-26.*.jar` |
+| Sponge API 8.2.x | `TrueAuth-Sponge-8.x.jar` |
+| Velocity 3.4.x+ | `TrueAuth-Velocity.jar` |
+| Waterfall or BungeeCord-compatible proxy | `TrueAuth-Waterfall.jar` |
+
+Do not install proxy adapters on a Bukkit, Paper, or Sponge server. Do not install Bukkit/Paper artifacts on a proxy or Sponge server.
+
 ## Installation
 
-1. Download the artifact for the server API and Minecraft version.
+1. Download the artifact for your platform and Minecraft version.
 2. Put the JAR in the server `plugins` directory.
 3. Start the server once.
 4. Edit `plugins/TrueAuth/config.yml` if needed.
+
+For a proxy deployment, install the proxy adapter on the proxy and use MySQL when multiple proxy instances need to share accounts. SQLite is intended for a single proxy instance.
 
 The default limbo world is `trueauth_void`. Stop the server before removing an old limbo world folder.
 
