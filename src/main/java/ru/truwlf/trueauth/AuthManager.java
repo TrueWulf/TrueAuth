@@ -25,11 +25,14 @@ final class AuthManager {
     private final Map<UUID, Location> locations = new ConcurrentHashMap<>();
     private final Map<UUID, PlatformScheduler.TaskHandle> timeouts = new ConcurrentHashMap<>();
     private final Set<UUID> registered = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> skipLogoutSave = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Long> locationVersions = new ConcurrentHashMap<>();
     AuthManager(TrueAuthPlugin plugin) { this.plugin = plugin; }
     boolean isAuthenticated(Player player) { return !unauthenticated.contains(player.getUniqueId()); }
     boolean isRegistered(Player player) { return registered.contains(player.getUniqueId()); }
     void enterLimbo(Player player) {
         UUID id = player.getUniqueId();
+        locationVersions.merge(id, 1L, Long::sum);
         unauthenticated.add(id);
         gameModes.put(id, player.getGameMode());
         invulnerable.put(id, player.isInvulnerable());
@@ -104,6 +107,16 @@ final class AuthManager {
         locations.remove(id);
         registered.remove(id);
     }
+    void forceLogout(Player player) {
+        locationVersions.remove(player.getUniqueId());
+        skipLogoutSave.add(player.getUniqueId());
+        player.kickPlayer("Your TrueAuth account was reset by an administrator.");
+    }
+    boolean consumeSkipLogoutSave(Player player) { return skipLogoutSave.remove(player.getUniqueId()); }
+    long locationSaveVersion(Player player) { return locationVersions.merge(player.getUniqueId(), 1L, Long::sum); }
+    boolean isCurrentLocationSave(Player player, long version) { return locationVersions.getOrDefault(player.getUniqueId(), 0L) == version; }
+    void finishLocationSave(Player player, long version) { locationVersions.remove(player.getUniqueId(), version); }
+    void clearLocationSaveVersion(Player player) { locationVersions.remove(player.getUniqueId()); }
     void restoreAll() {
         plugin.getServer().getOnlinePlayers().forEach(player -> {
             UUID id = player.getUniqueId();
@@ -114,6 +127,7 @@ final class AuthManager {
             InventorySnapshot inventory = inventories.remove(id); if (inventory != null) inventory.restore(player.getInventory());
             Location location = locations.remove(id); if (location != null) player.teleport(location);
             registered.remove(id);
+            locationVersions.remove(id);
             player.resetTitle();
             plugin.getServer().getOnlinePlayers().forEach(other -> {
                 if (!other.equals(player)) {

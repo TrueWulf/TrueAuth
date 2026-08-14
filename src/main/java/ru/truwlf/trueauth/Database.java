@@ -20,8 +20,8 @@ final class Database implements AutoCloseable {
         HikariConfig hikari = new HikariConfig();
         mysql = config.getString("database.type", "SQLITE").equalsIgnoreCase("MYSQL");
         if (mysql) {
-            String ssl = config.getBoolean("database.mysql.use-ssl", true) ? "true" : "false";
-            hikari.setJdbcUrl("jdbc:mysql://" + config.getString("database.mysql.host") + ":" + config.getInt("database.mysql.port") + "/" + config.getString("database.mysql.database") + "?useSSL=" + ssl + "&allowPublicKeyRetrieval=false&serverTimezone=UTC");
+            String sslMode = config.getBoolean("database.mysql.use-ssl", true) ? "VERIFY_IDENTITY" : "DISABLED";
+            hikari.setJdbcUrl("jdbc:mysql://" + config.getString("database.mysql.host") + ":" + config.getInt("database.mysql.port") + "/" + config.getString("database.mysql.database") + "?sslMode=" + sslMode + "&allowPublicKeyRetrieval=false&serverTimezone=UTC");
             hikari.setUsername(config.getString("database.mysql.username"));
             hikari.setPassword(config.getString("database.mysql.password"));
             hikari.setDriverClassName("com.mysql.cj.jdbc.Driver");

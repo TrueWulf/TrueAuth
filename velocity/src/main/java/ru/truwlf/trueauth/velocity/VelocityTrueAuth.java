@@ -7,6 +7,7 @@ import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.command.CommandExecuteEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -19,17 +20,27 @@ import ru.truwlf.trueauth.proxy.ProxyDatabase;
 import com.google.inject.Inject;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import com.velocitypowered.api.scheduler.ScheduledTask;
+import ru.truwlf.trueauth.proxy.ProxyAuthState;
+import ru.truwlf.trueauth.proxy.ProxyPasswordPolicy;
 
 @Plugin(id = "trueauth", name = "TrueAuth", version = "2.3.0", description = "Lightweight authentication for Velocity proxies.", authors = {"TrueWulf"})
 public final class VelocityTrueAuth {
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDirectory;
-    private final Map<UUID, Boolean> authenticated = new ConcurrentHashMap<>();
+    private static final long AUTH_TIMEOUT_SECONDS = 60;
+    private static final long AUTH_COOLDOWN_MILLIS = 1000;
+    private static final int MAX_ATTEMPTS = 5;
+    private final ProxyAuthState auth = new ProxyAuthState();
+    private final Map<UUID, ScheduledTask> timeouts = new ConcurrentHashMap<>();
     private ProxyDatabase database;
 
     @Inject
@@ -58,7 +69,13 @@ public final class VelocityTrueAuth {
 
     @Subscribe
     public void onLogin(LoginEvent event) {
-        authenticated.put(event.getPlayer().getUniqueId(), false);
+        UUID id = event.getPlayer().getUniqueId();
+        UUID session = auth.open(id);
+        ScheduledTask timeout = proxy.getScheduler().buildTask(this, () -> {
+            if (!auth.current(id, session) || auth.authenticated(id, session)) return;
+            proxy.getPlayer(id).ifPresent(player -> player.disconnect(message("Authentication timed out.")));
+        }).delay(Duration.ofSeconds(AUTH_TIMEOUT_SECONDS)).schedule();
+        timeouts.put(id, timeout);
     }
 
     @Subscribe
@@ -69,7 +86,18 @@ public final class VelocityTrueAuth {
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        authenticated.remove(event.getPlayer().getUniqueId());
+        UUID id = event.getPlayer().getUniqueId();
+        if (proxy.getPlayer(id).filter(current -> current != event.getPlayer()).isPresent()) return;
+        ScheduledTask timeout = timeouts.remove(id);
+        if (timeout != null) timeout.cancel();
+        auth.remove(id);
+    }
+
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
+        timeouts.values().forEach(ScheduledTask::cancel);
+        timeouts.clear();
+        if (database != null) database.close();
     }
 
     @Subscribe
@@ -98,53 +126,73 @@ public final class VelocityTrueAuth {
 
     private boolean isAuthCommand(String command) {
         String name = command.toLowerCase(java.util.Locale.ROOT).split(" ", 2)[0];
+        if (name.startsWith("/")) name = name.substring(1);
         return name.equals("register") || name.equals("reg") || name.equals("login") || name.equals("l") || name.equals("changepassword") || name.equals("cp");
     }
 
-    boolean isAuthenticated(Player player) {
-        return authenticated.getOrDefault(player.getUniqueId(), false);
-    }
+    boolean isAuthenticated(Player player) { return auth.authenticated(player.getUniqueId()); }
 
     void register(Player player, String password, String confirmation) {
-        if (!password.equals(confirmation)) {
-            player.sendMessage(message("Passwords do not match."));
+        UUID id = player.getUniqueId();
+        UUID session = auth.session(id);
+        if (!ProxyPasswordPolicy.valid(password) || !password.equals(confirmation)) {
+            send(player, password.equals(confirmation) ? "Password must contain 6-32 characters and be at most 72 bytes." : "Passwords do not match.");
             return;
         }
+        if (!beginAttempt(player, session)) return;
         runDatabase(player, () -> {
-            if (database.registered(player.getUniqueId())) {
+            if (!auth.current(id, session)) return;
+            if (database.registered(id)) {
                 send(player, "You are already registered.");
             } else {
-                database.register(player.getUniqueId(), password);
-                authenticated.put(player.getUniqueId(), true);
-                send(player, "Registration successful.");
-                connectToBackend(player);
+                database.register(id, password);
+                if (auth.authenticate(id, session)) {
+                    send(player, "Registration successful.");
+                    connectToBackend(player);
+                }
             }
-        });
+        }, id, session);
     }
 
     void login(Player player, String password) {
+        UUID id = player.getUniqueId();
+        UUID session = auth.session(id);
+        if (!ProxyPasswordPolicy.valid(password) || !beginAttempt(player, session)) return;
         runDatabase(player, () -> {
-            if (!database.authenticate(player.getUniqueId(), password)) {
+            if (!auth.current(id, session)) return;
+            if (!database.authenticate(id, password)) {
                 send(player, "Invalid password.");
             } else {
-                authenticated.put(player.getUniqueId(), true);
-                send(player, "Login successful.");
-                connectToBackend(player);
+                if (auth.authenticate(id, session)) {
+                    send(player, "Login successful.");
+                    connectToBackend(player);
+                }
             }
-        });
+        }, id, session);
     }
 
     void changePassword(Player player, String oldPassword, String newPassword) {
-        runDatabase(player, () -> send(player, database.changePassword(player.getUniqueId(), oldPassword, newPassword) ? "Password changed." : "Invalid current password."));
+        UUID id = player.getUniqueId();
+        UUID session = auth.session(id);
+        if (!isAuthenticated(player) || !ProxyPasswordPolicy.valid(oldPassword) || !ProxyPasswordPolicy.valid(newPassword) || session == null || !auth.beginAttempt(id, session, System.currentTimeMillis(), AUTH_COOLDOWN_MILLIS, MAX_ATTEMPTS, true)) return;
+        runDatabase(player, () -> send(player, database.changePassword(id, oldPassword, newPassword) ? "Password changed." : "Invalid current password."), id, session);
     }
 
-    private void runDatabase(Player player, DatabaseAction action) {
+    private boolean beginAttempt(Player player, UUID session) {
+        if (session == null || auth.beginAttempt(player.getUniqueId(), session, System.currentTimeMillis(), AUTH_COOLDOWN_MILLIS, MAX_ATTEMPTS)) return session != null;
+        send(player, "Please wait before trying again or reconnect.");
+        return false;
+    }
+
+    private void runDatabase(Player player, DatabaseAction action, UUID id, UUID session) {
         CompletableFuture.runAsync(() -> {
             try {
                 action.run();
             } catch (SQLException exception) {
                 logger.error("Database operation failed for {}", player.getUsername(), exception);
                 send(player, "Authentication storage is temporarily unavailable.");
+            } finally {
+                auth.finishAttempt(id, session);
             }
         });
     }
@@ -154,6 +202,14 @@ public final class VelocityTrueAuth {
     private Component message(String text) { return Component.text("[TrueAuth] " + text); }
 
     private void connectToBackend(Player player) {
+        List<String> order = proxy.getConfiguration().getAttemptConnectionOrder();
+        for (String name : order) {
+            var server = proxy.getServer(name);
+            if (server.isPresent()) {
+                player.createConnectionRequest(server.get()).connect();
+                return;
+            }
+        }
         proxy.getAllServers().stream().findFirst().ifPresent(server -> player.createConnectionRequest(server).connect());
     }
 
@@ -168,9 +224,9 @@ public final class VelocityTrueAuth {
         @Override public void execute(Invocation invocation) {
             if (!(invocation.source() instanceof Player player)) { invocation.source().sendMessage(Component.text("Only players can use this command.")); return; }
             String[] args = invocation.arguments();
-            if (type == Type.REGISTER && args.length >= 2) plugin.register(player, args[0], args[1]);
-            else if (type == Type.LOGIN && args.length >= 1) plugin.login(player, args[0]);
-            else if (type == Type.CHANGE_PASSWORD && args.length >= 2) plugin.changePassword(player, args[0], args[1]);
+            if (type == Type.REGISTER && args.length == 2) plugin.register(player, args[0], args[1]);
+            else if (type == Type.LOGIN && args.length == 1) plugin.login(player, args[0]);
+            else if (type == Type.CHANGE_PASSWORD && args.length == 2) plugin.changePassword(player, args[0], args[1]);
             else player.sendMessage(Component.text("[TrueAuth] Invalid command usage."));
         }
         @Override public java.util.List<String> suggest(Invocation invocation) { return java.util.List.of(); }

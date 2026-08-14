@@ -7,7 +7,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-/** Uses Bukkit scheduling on classic servers and Folia schedulers when present. */
 final class PlatformScheduler {
     private final TrueAuthPlugin plugin;
     private final boolean folia;

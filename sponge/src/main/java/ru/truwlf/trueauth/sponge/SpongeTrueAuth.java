@@ -14,7 +14,14 @@ import org.spongepowered.api.event.command.ExecuteCommandEvent;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
+import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
+import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.InteractItemEvent;
+import org.spongepowered.api.event.item.inventory.container.InteractContainerEvent;
 import org.spongepowered.api.event.item.inventory.container.ClickContainerEvent;
+import org.spongepowered.api.event.lifecycle.StoppingEngineEvent;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.event.message.PlayerChatEvent;
 import org.spongepowered.api.event.network.ServerSideConnectionEvent;
@@ -35,7 +42,10 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Plugin("trueauth")
 public final class SpongeTrueAuth {
@@ -47,7 +57,11 @@ public final class SpongeTrueAuth {
     private final Path configDirectory;
     private final Map<UUID, ScheduledTask> timeouts = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> authenticated = new ConcurrentHashMap<>();
+    private final Map<UUID, UUID> sessions = new ConcurrentHashMap<>();
     private Connection database;
+    private final Map<UUID, Long> attempts = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> inFlight = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> failedAttempts = new ConcurrentHashMap<>();
 
     @Inject
     public SpongeTrueAuth(PluginContainer plugin, @ConfigDir(sharedRoot = false) Path configDirectory) {
@@ -66,15 +80,18 @@ public final class SpongeTrueAuth {
     public void onJoin(ServerSideConnectionEvent.Join event) {
         ServerPlayer player = event.player();
         UUID id = player.uniqueId();
+        UUID session = UUID.randomUUID();
+        sessions.put(id, session);
         authenticated.put(id, false);
-        boolean accountExists = accountExists(id);
-        player.sendMessage(accountExists ? LOGIN_PROMPT : REGISTER_PROMPT);
+        CompletableFuture.supplyAsync(() -> accountExists(id), asyncExecutor()).whenComplete((accountExists, exception) -> runOnPlayer(player, () -> {
+            if (session.equals(sessions.get(id)) && player.isOnline()) player.sendMessage(exception == null && accountExists ? LOGIN_PROMPT : REGISTER_PROMPT);
+        }));
         long timeoutSeconds = 60;
         ScheduledTask timeout = Sponge.server().scheduler().submit(Task.builder()
                 .plugin(plugin)
                 .delay(Duration.ofSeconds(timeoutSeconds))
                 .execute(task -> {
-                    if (!isAuthenticated(id)) player.kick(Component.text("Authentication timed out."));
+                    if (session.equals(sessions.get(id)) && !isAuthenticated(id) && player.isOnline()) player.kick(Component.text("Authentication timed out."));
                 })
                 .build());
         timeouts.put(id, timeout);
@@ -84,7 +101,19 @@ public final class SpongeTrueAuth {
     public void onDisconnect(ServerSideConnectionEvent.Disconnect event) {
         UUID id = event.player().uniqueId();
         authenticated.remove(id);
+        sessions.remove(id);
         cancelTimeout(id);
+        attempts.remove(id);
+        inFlight.remove(id);
+        failedAttempts.remove(id);
+    }
+
+    @Listener
+    public void onStopping(StoppingEngineEvent<?> event) {
+        if (database != null) {
+            try { database.close(); } catch (SQLException ignored) { }
+            database = null;
+        }
     }
 
     @Listener
@@ -130,6 +159,26 @@ public final class SpongeTrueAuth {
         });
     }
 
+    @Listener
+    public void onContainerOpen(InteractContainerEvent.Open event) { cancel(event); }
+
+    @Listener
+    public void onBlockChange(ChangeBlockEvent.Pre event) {
+        if (event.cause().first(ServerPlayer.class).filter(player -> !isAuthenticated(player.uniqueId())).isPresent()) event.setCancelled(true);
+    }
+
+    @Listener
+    public void onBlockInteract(InteractBlockEvent.Secondary event) { cancel(event); }
+
+    @Listener
+    public void onItemInteract(InteractItemEvent.Secondary event) { cancel(event); }
+
+    @Listener
+    public void onDrop(DropItemEvent.Pre event) { cancel(event); }
+
+    @Listener
+    public void onPickup(ChangeInventoryEvent.Pickup.Pre event) { cancel(event); }
+
     private Command.Parameterized command(String name, Parameter.Value<String> password, CommandExecutor executor) {
         return Command.builder()
                 .addParameter(password)
@@ -141,34 +190,73 @@ public final class SpongeTrueAuth {
     private CommandResult register(CommandContext context, String password) {
         return player(context, "Only players can register.").map(player -> {
             UUID id = player.uniqueId();
+            UUID session = sessions.get(id);
             if (isAuthenticated(id)) return error("You are already authenticated.");
-            if (password.length() < 6 || password.length() > 72) return error("Password length must be 6-72 characters.");
-            if (accountExists(id)) return error("An account already exists. Use /login.");
-            saveAccount(id, BCrypt.hashpw(password, BCrypt.gensalt(12)));
-            authenticate(player);
-            return success(player, "Registration complete.");
+            if (!validPassword(password) || !beginAttempt(id)) return error("Password must contain 6-32 characters and be at most 72 bytes.");
+            CompletableFuture.supplyAsync(() -> {
+                if (accountExists(id)) return false;
+                saveAccount(id, BCrypt.hashpw(password, BCrypt.gensalt(12)));
+                return true;
+            }, asyncExecutor()).whenComplete((created, exception) -> runOnPlayer(player, () -> {
+                inFlight.remove(id);
+                if (!Objects.equals(session, sessions.get(id)) || !player.isOnline()) return;
+                if (exception != null) player.sendMessage(Component.text("Authentication storage is temporarily unavailable."));
+                else if (!created) player.sendMessage(Component.text("An account already exists. Use /login."));
+                else { authenticate(player); player.sendMessage(Component.text("Registration complete.")); }
+            }));
+            return CommandResult.success();
         }).orElseGet(() -> error("Only players can register."));
     }
 
     private CommandResult login(CommandContext context, String password) {
         return player(context, "Only players can log in.").map(player -> {
             UUID id = player.uniqueId();
+            UUID session = sessions.get(id);
             if (isAuthenticated(id)) return error("You are already authenticated.");
-            String hash = accountHash(id);
-            if (hash == null || !BCrypt.checkpw(password, hash)) return error("Invalid password.");
-            authenticate(player);
-            return success(player, "Login successful.");
+            if (!validPassword(password) || !beginAttempt(id)) return error("Password must contain 6-32 characters and be at most 72 bytes.");
+            CompletableFuture.supplyAsync(() -> {
+                String hash = accountHash(id);
+                return hash != null && BCrypt.checkpw(password, hash);
+            }, asyncExecutor()).whenComplete((valid, exception) -> runOnPlayer(player, () -> {
+                inFlight.remove(id);
+                if (!Objects.equals(session, sessions.get(id)) || !player.isOnline()) return;
+                if (exception != null) player.sendMessage(Component.text("Authentication storage is temporarily unavailable."));
+                else if (!valid) failed(player, id);
+                else { authenticate(player); player.sendMessage(Component.text("Login successful.")); }
+            }));
+            return CommandResult.success();
         }).orElseGet(() -> error("Only players can log in."));
     }
 
     private void authenticate(ServerPlayer player) {
         UUID id = player.uniqueId();
+        if (!player.isOnline() || !authenticated.containsKey(id) || sessions.get(id) == null) return;
         authenticated.put(id, true);
         cancelTimeout(id);
         player.sendMessage(Component.text("Authentication successful."));
     }
 
     private boolean isAuthenticated(UUID id) { return authenticated.getOrDefault(id, false); }
+
+    private boolean validPassword(String password) { return password != null && password.length() >= 6 && password.length() <= 32 && password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 72; }
+
+    private boolean beginAttempt(UUID id) {
+        long now = System.currentTimeMillis();
+        if (inFlight.putIfAbsent(id, true) != null) return false;
+        Long previous = attempts.put(id, now);
+        if (previous != null && now - previous < 1000) { inFlight.remove(id); return false; }
+        return true;
+    }
+
+    private void runOnPlayer(ServerPlayer player, Runnable task) {
+        Sponge.server().scheduler().submit(Task.builder().plugin(plugin).execute(ignored -> task.run()).build());
+    }
+
+    private Executor asyncExecutor() { return command -> Sponge.asyncScheduler().executor(plugin).execute(command); }
+
+    private void cancel(org.spongepowered.api.event.Event event) {
+        if (event.cause().first(ServerPlayer.class).filter(player -> !isAuthenticated(player.uniqueId())).isPresent()) ((org.spongepowered.api.event.Cancellable) event).setCancelled(true);
+    }
 
     private void cancelTimeout(UUID id) {
         ScheduledTask task = timeouts.remove(id);
@@ -179,7 +267,7 @@ public final class SpongeTrueAuth {
         return accountHash(id) != null;
     }
 
-    private String accountHash(UUID id) {
+    private synchronized String accountHash(UUID id) {
         try (PreparedStatement statement = database().prepareStatement("SELECT password FROM accounts WHERE uuid = ?")) {
             statement.setString(1, id.toString());
             try (ResultSet result = statement.executeQuery()) { return result.next() ? result.getString(1) : null; }
@@ -188,7 +276,7 @@ public final class SpongeTrueAuth {
         }
     }
 
-    private void saveAccount(UUID id, String password) {
+    private synchronized void saveAccount(UUID id, String password) {
         try (PreparedStatement statement = database().prepareStatement("INSERT INTO accounts(uuid, password) VALUES(?, ?)")) {
             statement.setString(1, id.toString());
             statement.setString(2, password);
@@ -198,7 +286,7 @@ public final class SpongeTrueAuth {
         }
     }
 
-    private Connection database() {
+    private synchronized Connection database() {
         if (database != null) return database;
         try {
             Files.createDirectories(configDirectory);
@@ -210,6 +298,12 @@ public final class SpongeTrueAuth {
         } catch (Exception exception) {
             throw new IllegalStateException("Could not open TrueAuth database", exception);
         }
+    }
+
+    private void failed(ServerPlayer player, UUID id) {
+        int count = failedAttempts.merge(id, 1, Integer::sum);
+        if (count >= 5) player.kick(Component.text("Too many failed authentication attempts."));
+        else player.sendMessage(Component.text("Invalid password."));
     }
 
     private static CommandResult success(ServerPlayer player, String message) {

@@ -44,7 +44,10 @@ final class LimboListener implements Listener {
     }
     @EventHandler void quit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        if (plugin.auth().isAuthenticated(player)) saveLocation(player);
+        boolean skipSave = plugin.auth().consumeSkipLogoutSave(player);
+        boolean authenticated = plugin.auth().isAuthenticated(player);
+        if (authenticated && !skipSave) saveLocation(player);
+        else if (!authenticated) plugin.auth().clearLocationSaveVersion(player);
         plugin.auth().leave(player);
     }
     @EventHandler(ignoreCancelled = true) void chat(AsyncPlayerChatEvent event) { if (blocked(event.getPlayer())) event.setCancelled(true); }
@@ -73,7 +76,7 @@ final class LimboListener implements Listener {
     @EventHandler void respawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         Location deathLocation = deathLocations.remove(player.getUniqueId());
-        if (!plugin.auth().isAuthenticated(player) || event.getRespawnLocation() != null || !plugin.getConfig().getBoolean("spawns.random-respawn.enabled", false)) return;
+        if (!plugin.auth().isAuthenticated(player) || event.isBedSpawn() || event.isAnchorSpawn() || !plugin.getConfig().getBoolean("spawns.random-respawn.enabled", false)) return;
         var world = plugin.getServer().getWorld(plugin.getConfig().getString("spawns.random-respawn.world", "world"));
         if (world == null) return;
         int radius = Math.max(1, plugin.getConfig().getInt("spawns.random-respawn.radius", 300));
@@ -109,11 +112,14 @@ final class LimboListener implements Listener {
         var location = player.getLocation();
         if (location.getWorld() == null || location.getWorld().equals(plugin.limboWorld())) return;
         Database.SavedLocation saved = new Database.SavedLocation(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        long version = plugin.auth().locationSaveVersion(player);
         plugin.scheduler().runAsync(() -> {
             try {
-                plugin.database().saveLastLocation(player.getUniqueId(), saved);
+                if (plugin.auth().isCurrentLocationSave(player, version)) plugin.database().saveLastLocation(player.getUniqueId(), saved);
             } catch (SQLException exception) {
                 plugin.getLogger().warning("Could not save logout location for " + player.getName() + ": " + exception.getMessage());
+            } finally {
+                plugin.auth().finishLocationSave(player, version);
             }
         });
     }

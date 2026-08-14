@@ -30,6 +30,7 @@ public final class ProxyDatabase implements AutoCloseable {
             config.setProperty("database.mysql.database", "trueauth");
             config.setProperty("database.mysql.username", "trueauth");
             config.setProperty("database.mysql.password", "change-me");
+            config.setProperty("database.mysql.ssl-mode", "VERIFY_IDENTITY");
             try (var writer = Files.newBufferedWriter(configFile)) {
                 config.store(writer, "TrueAuth proxy configuration");
             }
@@ -45,7 +46,8 @@ public final class ProxyDatabase implements AutoCloseable {
             String host = config.getProperty("database.mysql.host", "127.0.0.1");
             String port = config.getProperty("database.mysql.port", "3306");
             String database = config.getProperty("database.mysql.database", "trueauth");
-            hikari.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&allowPublicKeyRetrieval=false&serverTimezone=UTC");
+            String sslMode = config.getProperty("database.mysql.ssl-mode", "VERIFY_IDENTITY");
+            hikari.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?sslMode=" + sslMode + "&allowPublicKeyRetrieval=false&serverTimezone=UTC");
             hikari.setUsername(config.getProperty("database.mysql.username", "trueauth"));
             hikari.setPassword(config.getProperty("database.mysql.password", "change-me"));
             hikari.setDriverClassName("com.mysql.cj.jdbc.Driver");
